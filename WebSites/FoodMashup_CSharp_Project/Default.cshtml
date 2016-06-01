@@ -1,61 +1,21 @@
 ﻿@{
     Layout = "~/_SiteLayout.cshtml";
-    Page.Title = "Food Mashup";
+    Page.Title = "Search";
+
+	// this page only includes the search form
 }
 
 @section featured {
 <section class="featured">
     <div class="content-wrapper">
-		Information to be displayed...
+		<p><label>Search for Restaurants at Your Location</label><br>
+		<b>Supported countries:</b> Australia, Brasil, Canada, Chile, Czech Republic, India, Indonesia, Ireland, Italy, Lebanon, Malaysia, 
+		New Zealand, Philippines, Poland, Portugal, Qatar, Slovakia, South Africa, Sri Lanka, Turkey, UAE, United Kingdom, United States
+		<form action="/Restaurants/Results" method="post">
+		<p><label>Enter Location</label>
+		<input type="text" name="searchData" /></p>
+		<p><input type="submit" value="Search" /></p>
+		</form>
     </div>
 </section>
 }
-
-<h3>Your Restaurant Data</h3>
-
-@{
-	var googleKey = "getYourselfAKey!!";
-	var googleQuery = "London";
-	var googleType = "restaurant";
-
-    var webClient = new WebClient();
-
-    var googleResponse = webClient.DownloadString("https://maps.googleapis.com/maps/api/place/textsearch/json?key=" + googleKey + "&query=" + googleQuery + "&type=" + googleType);
-    var googleJson = Json.Decode(googleResponse);
-
-	
-}
-
-<table>
-	<tr>
-		<th>Restaurant Name</th>
-		<th>Restaurant Address</th>
-		<th>Google Places Rating</th>
-		<th>Zomato Rating</th>
-	</tr>
-
-	@foreach(var result in googleJson.results)
-	{
-		<tr>
-			<td>@result.name</td>
-			<td>@result.formatted_address</td>
-			<td>@result.rating</td>
-
-			@
-			{
-				// adapt variables...
-				var zomatoKey = "af10ba779dfeb9b8ff3a4981875d3d70";
-				var q = "Rules";
-				var lat = "51.5074";
-				var lng = "-0.200063";
-
-				webClient.Headers.Add("accept", "application/json");
-				webClient.Headers.Add("user-key", @zomatoKey);
-				var zomatoResponse = webClient.DownloadString("https://developers.zomato.com/api/v2.1/search?q=" + q + "&lat=" + lat + "&lon=" + lng);
-				var zomatoJson = Json.Decode(zomatoResponse);
-			}
-
-			<td>@zomatoJson.restaurants[0].restaurant.user_rating.aggregate_rating</td>
-		</tr>
-	}
-</table>

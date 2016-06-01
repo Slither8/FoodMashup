@@ -1,0 +1,102 @@
+﻿@{
+    Layout = "~/_SiteLayout.cshtml";
+    Page.Title = "Results";
+
+	//this page shows the search results
+}
+
+@{
+if(IsPost)
+    {
+		// get the request data
+	    var googleQuery = Request["searchData"];
+
+		// define Google variables
+		var googleKey = "AIzaSyBYVO3HxTIyMVhZW2gBfhu2X2IhH16PIb4";
+		var googleType = "restaurant";
+
+		// create web client
+		var webClient = new WebClient();
+
+		// request data from Google Places
+		var googleResponse = webClient.DownloadString("https://maps.googleapis.com/maps/api/place/textsearch/json?key=" + googleKey + "&query=" + googleQuery + "&type=" + googleType);
+		var googleJson = Json.Decode(googleResponse);
+
+		// required for Zomato
+		var zomatoKey = "af10ba779dfeb9b8ff3a4981875d3d70";
+		webClient.Headers.Set("accept", "application/json");
+		webClient.Headers.Set("user-key", @zomatoKey);
+
+		// not displaying more than the first 5 results
+		var resultCounter = 5;
+		var resultsFoundCounter = googleJson.results.Length;
+
+		// if less than 5 results available, adapt counter
+		if(resultsFoundCounter < 5)
+		{
+			resultCounter = resultsFoundCounter;
+		}
+
+		// display results in a table...
+		<h3>Your Restaurant Data for @googleQuery</h3>
+
+		<table>
+
+			<tr>
+				<th>Restaurant Name</th>
+				<th>Restaurant Address</th>
+				<th>Google Places Rating (1-5)</th>
+				<th>Zomato Rating (0-5)</th>
+			</tr>
+
+			@for(int i = 0; i < resultCounter; i++)
+			{
+				if(googleJson.results[i] != null)
+				{
+					var googleResult = googleJson.results[i];
+
+					var googleName = googleResult.name;
+
+					<tr>
+						<td>@googleName</td>
+						<td>@googleResult.formatted_address</td>
+						<td>@googleResult.rating.ToString().Replace(",", ".")</td>
+
+						@{
+							// replace commas with dots because for some reason, the Google data is in comma format (1,00) but for Zamato, the English format (1.00)
+							var lat = googleResult.geometry.location.lat.ToString().Replace(",", ".");
+							var lng = googleResult.geometry.location.lng.ToString().Replace(",", ".");
+
+							// request data from Zomato and display afterwards
+							var zomatoResponse = webClient.DownloadString("https://developers.zomato.com/api/v2.1/search?q=" + googleName + "&lat=" + lat + "&lon=" + lng);
+							var zomatoJson = Json.Decode(zomatoResponse);
+
+							// only try to display data if there is something to show; otherwise inform the user about this circumstance
+							var numberOfResults = zomatoJson.restaurants.Length > 0 ? true : false;
+
+							if(numberOfResults)
+							{
+								<td>@zomatoJson.restaurants[0].restaurant.user_rating.aggregate_rating</td>
+							}
+							else
+							{
+								<td>No rating found</td>
+							}
+						}
+					</tr>
+				}
+				else
+				{
+					break;
+				}
+			}
+
+		</table>
+					
+		// if no data found, tell the user
+		if(resultsFoundCounter == 0)
+		{
+			<b>Unfortunately, we could not find any results for your search request.</b>
+		}
+    }
+}
